@@ -33,7 +33,7 @@ type Config struct {
 // It handles migration from legacy single-token format.
 func (c *Config) GetCurrentProfile() *Profile {
 	// If we have profiles, use the current one
-	if c.Profiles != nil && len(c.Profiles) > 0 {
+	if len(c.Profiles) > 0 {
 		profileName := c.CurrentProfile
 		if profileName == "" {
 			profileName = "default"
@@ -66,7 +66,7 @@ func (c *Config) SetProfile(name string, profile *Profile) {
 
 // ListProfiles returns a sorted list of profile names.
 func (c *Config) ListProfiles() []string {
-	if c.Profiles == nil || len(c.Profiles) == 0 {
+	if len(c.Profiles) == 0 {
 		// If using legacy format with a token, return "default"
 		if c.Token != "" {
 			return []string{"default"}
@@ -84,7 +84,7 @@ func (c *Config) ListProfiles() []string {
 
 // MigrateToProfiles migrates legacy single-token config to profiles format.
 func (c *Config) MigrateToProfiles() {
-	if c.Token != "" && (c.Profiles == nil || len(c.Profiles) == 0) {
+	if c.Token != "" && len(c.Profiles) == 0 {
 		c.Profiles = map[string]*Profile{
 			"default": {
 				Token:         c.Token,
