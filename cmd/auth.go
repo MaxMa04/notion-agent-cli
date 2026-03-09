@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/4ier/notion-cli/internal/client"
-	"github.com/4ier/notion-cli/internal/config"
-	"github.com/4ier/notion-cli/internal/render"
+	"github.com/MaxMa04/notion-agent-cli/internal/client"
+	"github.com/MaxMa04/notion-agent-cli/internal/config"
+	"github.com/MaxMa04/notion-agent-cli/internal/render"
 	"github.com/spf13/cobra"
 )
 
@@ -26,10 +26,10 @@ var authLoginCmd = &cobra.Command{
 Use --profile to save credentials under a named profile for multi-workspace support.
 
 Examples:
-  notion auth login
-  notion auth login --with-token
-  notion auth login --profile work
-  echo "secret_xxx" | notion auth login --with-token --profile personal`,
+  notion-agent auth login
+  notion-agent auth login --with-token
+  notion-agent auth login --profile work
+  echo "secret_xxx" | notion-agent auth login --with-token --profile personal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		withToken, _ := cmd.Flags().GetBool("with-token")
 		profileName, _ := cmd.Flags().GetString("profile")
@@ -109,7 +109,7 @@ var authStatusCmd = &cobra.Command{
 	Long: `Show current authentication status and profile information.
 
 Examples:
-  notion auth status`,
+  notion-agent auth status`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
@@ -172,8 +172,8 @@ var authLogoutCmd = &cobra.Command{
 Without arguments, clears all profiles. With a profile name, removes only that profile.
 
 Examples:
-  notion auth logout
-  notion auth logout work`,
+  notion-agent auth logout
+  notion-agent auth logout work`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
@@ -231,14 +231,14 @@ Without arguments, shows an interactive list of profiles to choose from.
 With a profile name, switches directly to that profile.
 
 Examples:
-  notion auth switch
-  notion auth switch work
-  notion auth switch personal`,
+  notion-agent auth switch
+  notion-agent auth switch work
+  notion-agent auth switch personal`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
 		if err != nil {
-			return fmt.Errorf("not authenticated. Run 'notion auth login' first")
+			return fmt.Errorf("not authenticated. Run 'notion-agent auth login' first")
 		}
 
 		// Migrate legacy config if needed
@@ -246,7 +246,7 @@ Examples:
 
 		profiles := cfg.ListProfiles()
 		if len(profiles) == 0 {
-			return fmt.Errorf("no profiles found. Run 'notion auth login' first")
+			return fmt.Errorf("no profiles found. Run 'notion-agent auth login' first")
 		}
 
 		var targetProfile string
@@ -341,22 +341,28 @@ Validates:
   - Can list databases
 
 Examples:
-  notion auth doctor`,
+  notion-agent auth doctor`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Notion CLI Health Check")
+		fmt.Println("Notion Agent CLI Health Check")
 		fmt.Println()
 
 		// Check 1: Config file
 		cfg, err := config.Load()
-		if err != nil || cfg.Token == "" {
+		if err != nil {
+			fmt.Println("  ✗ Config: no config found")
+			fmt.Println("    Run: notion-agent auth login")
+			return nil
+		}
+		profile := cfg.GetCurrentProfile()
+		if profile == nil || profile.Token == "" {
 			fmt.Println("  ✗ Config: no token found")
-			fmt.Println("    Run: notion auth login --with-token")
+			fmt.Println("    Run: notion-agent auth login")
 			return nil
 		}
 		fmt.Println("  ✓ Config: token found")
 
 		// Check 2: Token validity
-		c := client.New(cfg.Token)
+		c := client.New(profile.Token)
 		me, err := c.GetMe()
 		if err != nil {
 			fmt.Printf("  ✗ Auth: token is invalid (%v)\n", err)

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -188,6 +189,79 @@ func TestListProfiles(t *testing.T) {
 	}
 	if profiles[2] != "work" {
 		t.Errorf("profiles[2] = %q, want %q", profiles[2], "work")
+	}
+}
+
+func TestGetProfile(t *testing.T) {
+	cfg := &Config{
+		Profiles: map[string]*Profile{
+			"default": {Token: "t1"},
+			"work":    {Token: "t2"},
+		},
+	}
+
+	p := cfg.GetProfile("work")
+	if p == nil {
+		t.Fatal("GetProfile(\"work\") returned nil")
+	}
+	if p.Token != "t2" {
+		t.Errorf("Token = %q, want %q", p.Token, "t2")
+	}
+}
+
+func TestGetProfile_NotFound(t *testing.T) {
+	cfg := &Config{
+		Profiles: map[string]*Profile{
+			"default": {Token: "t1"},
+		},
+	}
+
+	p := cfg.GetProfile("nonexistent")
+	if p != nil {
+		t.Errorf("GetProfile(\"nonexistent\") should return nil, got %+v", p)
+	}
+}
+
+func TestGetProfile_NilProfiles(t *testing.T) {
+	cfg := &Config{}
+	p := cfg.GetProfile("anything")
+	if p != nil {
+		t.Errorf("GetProfile on empty config should return nil, got %+v", p)
+	}
+}
+
+func TestLegacyConfigDirFallback(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmpDir, ".config"))
+	t.Setenv("HOME", tmpDir)
+
+	// Write config to legacy path
+	legacyDir := filepath.Join(tmpDir, ".config", "notion-cli")
+	if err := os.MkdirAll(legacyDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	legacyCfg := &Config{Token: "legacy-token", WorkspaceName: "Legacy"}
+	data, _ := json.Marshal(legacyCfg)
+	if err := os.WriteFile(filepath.Join(legacyDir, "config.json"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Load should find it via legacy path
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if loaded.Token != "legacy-token" {
+		t.Errorf("Token = %q, want %q (from legacy path)", loaded.Token, "legacy-token")
+	}
+
+	// Save should write to new path
+	if err := Save(loaded); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+	newPath := filepath.Join(tmpDir, ".config", "notion-agent-cli", "config.json")
+	if _, err := os.Stat(newPath); os.IsNotExist(err) {
+		t.Error("Save() should write to new config path notion-agent-cli/")
 	}
 }
 

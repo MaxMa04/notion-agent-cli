@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/4ier/notion-cli/internal/client"
-	"github.com/4ier/notion-cli/internal/render"
+	"github.com/MaxMa04/notion-agent-cli/internal/client"
+	"github.com/MaxMa04/notion-agent-cli/internal/render"
 	"github.com/spf13/cobra"
 )
 

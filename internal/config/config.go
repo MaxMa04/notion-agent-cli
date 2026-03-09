@@ -56,6 +56,14 @@ func (c *Config) GetCurrentProfile() *Profile {
 	return nil
 }
 
+// GetProfile returns a specific profile by name, or nil if not found.
+func (c *Config) GetProfile(name string) *Profile {
+	if c.Profiles != nil {
+		return c.Profiles[name]
+	}
+	return nil
+}
+
 // SetProfile sets or updates a profile in the config.
 func (c *Config) SetProfile(name string, profile *Profile) {
 	if c.Profiles == nil {
@@ -104,6 +112,15 @@ func (c *Config) MigrateToProfiles() {
 
 func configDir() string {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		return filepath.Join(xdg, "notion-agent-cli")
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config", "notion-agent-cli")
+}
+
+// legacyConfigDir returns the old config directory for backward compatibility.
+func legacyConfigDir() string {
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
 		return filepath.Join(xdg, "notion-cli")
 	}
 	home, _ := os.UserHomeDir()
@@ -114,10 +131,18 @@ func configPath() string {
 	return filepath.Join(configDir(), "config.json")
 }
 
+func legacyConfigPath() string {
+	return filepath.Join(legacyConfigDir(), "config.json")
+}
+
 func Load() (*Config, error) {
 	data, err := os.ReadFile(configPath())
 	if err != nil {
-		return &Config{}, err
+		// Fall back to legacy path
+		data, err = os.ReadFile(legacyConfigPath())
+		if err != nil {
+			return &Config{}, err
+		}
 	}
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {

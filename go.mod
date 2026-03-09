@@ -1,4 +1,4 @@
-module github.com/4ier/notion-cli
+module github.com/MaxMa04/notion-agent-cli
 
 go 1.24.0
 
