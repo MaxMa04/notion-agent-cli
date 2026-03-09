@@ -205,6 +205,193 @@ func TestMakeTextBlock(t *testing.T) {
 	}
 }
 
+func TestParseCSVRow(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []string
+	}{
+		{"a,b,c", []string{"a", "b", "c"}},
+		{`"hello, world",b,c`, []string{"hello, world", "b", "c"}},
+		{"single", []string{"single"}},
+		{"a,,c", []string{"a", "", "c"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := parseCSVRow(tt.input)
+			if len(got) != len(tt.want) {
+				t.Fatalf("got %d fields, want %d: %v", len(got), len(tt.want), got)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("field[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestBuildTableRow(t *testing.T) {
+	row := buildTableRow([]string{"A", "B", "C"})
+
+	if row["type"] != "table_row" {
+		t.Fatalf("type = %v, want table_row", row["type"])
+	}
+
+	rowData, ok := row["table_row"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing table_row data")
+	}
+
+	cells, ok := rowData["cells"].([]interface{})
+	if !ok {
+		t.Fatal("missing cells")
+	}
+	if len(cells) != 3 {
+		t.Fatalf("got %d cells, want 3", len(cells))
+	}
+
+	// Check first cell
+	cell0 := cells[0].([]interface{})
+	rt := cell0[0].(map[string]interface{})
+	text := rt["text"].(map[string]interface{})
+	if text["content"] != "A" {
+		t.Errorf("cell[0] content = %v, want A", text["content"])
+	}
+}
+
+func TestBuildTableBlock(t *testing.T) {
+	rows := [][]string{
+		{"Name", "Role", "Status"},
+		{"Alice", "Dev", "Active"},
+		{"Bob", "PM", "Done"},
+	}
+
+	block := buildTableBlock(rows, true)
+
+	if block["type"] != "table" {
+		t.Fatalf("type = %v, want table", block["type"])
+	}
+
+	tableData, ok := block["table"].(map[string]interface{})
+	if !ok {
+		t.Fatal("missing table data")
+	}
+
+	if tableData["table_width"] != 3 {
+		t.Errorf("table_width = %v, want 3", tableData["table_width"])
+	}
+	if tableData["has_column_header"] != true {
+		t.Error("has_column_header should be true")
+	}
+	if tableData["has_row_header"] != false {
+		t.Error("has_row_header should be false")
+	}
+
+	children, ok := tableData["children"].([]interface{})
+	if !ok {
+		t.Fatal("missing children")
+	}
+	if len(children) != 3 {
+		t.Errorf("got %d children, want 3", len(children))
+	}
+}
+
+func TestBuildTableBlock_NoHeader(t *testing.T) {
+	rows := [][]string{{"a", "b"}, {"c", "d"}}
+	block := buildTableBlock(rows, false)
+	tableData := block["table"].(map[string]interface{})
+	if tableData["has_column_header"] != false {
+		t.Error("has_column_header should be false")
+	}
+}
+
+func TestBuildTableBlock_UnevenRows(t *testing.T) {
+	rows := [][]string{
+		{"a", "b", "c"},
+		{"x"},
+	}
+	block := buildTableBlock(rows, true)
+	tableData := block["table"].(map[string]interface{})
+	if tableData["table_width"] != 3 {
+		t.Errorf("table_width = %v, want 3 (widest row)", tableData["table_width"])
+	}
+	// Second row should be padded to 3 cells
+	children := tableData["children"].([]interface{})
+	row2 := children[1].(map[string]interface{})
+	cells := row2["table_row"].(map[string]interface{})["cells"].([]interface{})
+	if len(cells) != 3 {
+		t.Errorf("row2 has %d cells, want 3 (padded)", len(cells))
+	}
+}
+
+func TestIsSeparatorRow(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"---|---", true},
+		{" --- | --- | --- ", true},
+		{":---:|:---:", true},
+		{"hello | world", false},
+		{"---", true},
+		{"", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			if got := isSeparatorRow(tt.input); got != tt.want {
+				t.Errorf("isSeparatorRow(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseTableRow(t *testing.T) {
+	got := parseTableRow("| Name | Role | Status |")
+	want := []string{"Name", "Role", "Status"}
+	if len(got) != len(want) {
+		t.Fatalf("got %d cells, want %d: %v", len(got), len(want), got)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("cell[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestParseMarkdownTable(t *testing.T) {
+	input := "| Name | Role |\n| --- | --- |\n| Alice | Dev |\n| Bob | PM |"
+	blocks := parseMarkdownToBlocks(input)
+	if len(blocks) != 1 {
+		t.Fatalf("got %d blocks, want 1", len(blocks))
+	}
+	if blocks[0]["type"] != "table" {
+		t.Errorf("type = %v, want table", blocks[0]["type"])
+	}
+	tableData := blocks[0]["table"].(map[string]interface{})
+	children := tableData["children"].([]interface{})
+	// 3 rows: header + 2 data (separator is skipped)
+	if len(children) != 3 {
+		t.Errorf("got %d rows, want 3", len(children))
+	}
+}
+
+func TestParseMarkdownTable_Mixed(t *testing.T) {
+	input := "# Title\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\nSome text"
+	blocks := parseMarkdownToBlocks(input)
+	if len(blocks) != 3 {
+		t.Fatalf("got %d blocks, want 3 (heading + table + paragraph)", len(blocks))
+	}
+	if blocks[0]["type"] != "heading_1" {
+		t.Errorf("block[0] type = %v, want heading_1", blocks[0]["type"])
+	}
+	if blocks[1]["type"] != "table" {
+		t.Errorf("block[1] type = %v, want table", blocks[1]["type"])
+	}
+	if blocks[2]["type"] != "paragraph" {
+		t.Errorf("block[2] type = %v, want paragraph", blocks[2]["type"])
+	}
+}
+
 func TestMapBlockTypeAliases(t *testing.T) {
 	tests := []struct {
 		input string
@@ -225,6 +412,10 @@ func TestMapBlockTypeAliases(t *testing.T) {
 		{"code", "code"},
 		{"callout", "callout"},
 		{"divider", "divider"},
+		{"table", "table"},
+		{"tbl", "table"},
+		{"table_row", "table_row"},
+		{"trow", "table_row"},
 		// passthrough for native Notion types
 		{"heading_1", "heading_1"},
 		{"bulleted_list_item", "bulleted_list_item"},

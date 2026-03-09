@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -555,6 +556,193 @@ Examples:
 	},
 }
 
+var blockTableCmd = &cobra.Command{
+	Use:   "table <parent-id|url> [rows...]",
+	Short: "Create a table block",
+	Long: `Create a table on a Notion page.
+
+Each argument is a comma-separated row. The first row becomes the header by default.
+
+Examples:
+  notion block table <page-id> "Name,Role,Status" "Alice,Dev,Active" "Bob,PM,Active"
+  notion block table <page-id> --no-header "A,B,C" "1,2,3"
+  notion block table <page-id> --csv data.csv
+  notion block table <page-id> --after <block-id> "Col1,Col2" "Val1,Val2"`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		token, err := getToken()
+		if err != nil {
+			return err
+		}
+
+		parentID := util.ResolveID(args[0])
+		noHeader, _ := cmd.Flags().GetBool("no-header")
+		afterID, _ := cmd.Flags().GetString("after")
+		csvFile, _ := cmd.Flags().GetString("csv")
+
+		c := client.New(token)
+		c.SetDebug(debugMode)
+
+		var rows [][]string
+
+		if csvFile != "" {
+			f, err := os.Open(csvFile)
+			if err != nil {
+				return fmt.Errorf("open csv: %w", err)
+			}
+			defer f.Close()
+			rows, err = csv.NewReader(f).ReadAll()
+			if err != nil {
+				return fmt.Errorf("parse csv: %w", err)
+			}
+		} else {
+			if len(args) < 2 {
+				return fmt.Errorf("at least one row argument is required (or use --csv)")
+			}
+			for _, arg := range args[1:] {
+				rows = append(rows, parseCSVRow(arg))
+			}
+		}
+
+		if len(rows) == 0 {
+			return fmt.Errorf("no rows to create table from")
+		}
+
+		tableBlock := buildTableBlock(rows, !noHeader)
+		reqBody := map[string]interface{}{
+			"children": []map[string]interface{}{tableBlock},
+		}
+		if afterID != "" {
+			reqBody["after"] = util.ResolveID(afterID)
+		}
+
+		data, err := c.Patch(fmt.Sprintf("/v1/blocks/%s/children", parentID), reqBody)
+		if err != nil {
+			return fmt.Errorf("create table: %w", err)
+		}
+
+		if outputFormat == "json" {
+			var result map[string]interface{}
+			if err := json.Unmarshal(data, &result); err != nil {
+				return fmt.Errorf("parse response: %w", err)
+			}
+			return render.JSON(result)
+		}
+
+		// Extract table block ID from response
+		var result map[string]interface{}
+		if err := json.Unmarshal(data, &result); err == nil {
+			if results, ok := result["results"].([]interface{}); ok && len(results) > 0 {
+				if block, ok := results[0].(map[string]interface{}); ok {
+					if id, ok := block["id"].(string); ok {
+						fmt.Printf("✓ Table created (%d rows, %d columns) [%s]\n", len(rows), len(rows[0]), id)
+						return nil
+					}
+				}
+			}
+		}
+
+		fmt.Printf("✓ Table created (%d rows, %d columns)\n", len(rows), len(rows[0]))
+		return nil
+	},
+}
+
+var blockTableAddCmd = &cobra.Command{
+	Use:   "table-add <table-block-id|url> [rows...]",
+	Short: "Add rows to an existing table",
+	Long: `Append rows to an existing Notion table block.
+
+Each argument is a comma-separated row.
+
+Examples:
+  notion block table-add <table-id> "Alice,Dev,Active"
+  notion block table-add <table-id> "Alice,Dev,Active" "Bob,PM,Done"
+  notion block table-add <table-id> --csv more-data.csv`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		token, err := getToken()
+		if err != nil {
+			return err
+		}
+
+		tableID := util.ResolveID(args[0])
+		csvFile, _ := cmd.Flags().GetString("csv")
+
+		c := client.New(token)
+		c.SetDebug(debugMode)
+
+		// Get the table block to determine table_width
+		tableBlock, err := c.GetBlock(tableID)
+		if err != nil {
+			return fmt.Errorf("get table block: %w", err)
+		}
+		blockType, _ := tableBlock["type"].(string)
+		if blockType != "table" {
+			return fmt.Errorf("block %s is not a table (type: %s)", tableID, blockType)
+		}
+		tableData, _ := tableBlock["table"].(map[string]interface{})
+		tableWidth := int(0)
+		if w, ok := tableData["table_width"].(float64); ok {
+			tableWidth = int(w)
+		}
+		if tableWidth == 0 {
+			return fmt.Errorf("could not determine table width")
+		}
+
+		var rows [][]string
+
+		if csvFile != "" {
+			f, err := os.Open(csvFile)
+			if err != nil {
+				return fmt.Errorf("open csv: %w", err)
+			}
+			defer f.Close()
+			rows, err = csv.NewReader(f).ReadAll()
+			if err != nil {
+				return fmt.Errorf("parse csv: %w", err)
+			}
+		} else {
+			if len(args) < 2 {
+				return fmt.Errorf("at least one row argument is required (or use --csv)")
+			}
+			for _, arg := range args[1:] {
+				rows = append(rows, parseCSVRow(arg))
+			}
+		}
+
+		// Validate and pad/trim rows to match table width
+		var children []map[string]interface{}
+		for _, row := range rows {
+			// Pad short rows, trim long rows
+			cells := make([]string, tableWidth)
+			for j := 0; j < tableWidth && j < len(row); j++ {
+				cells[j] = row[j]
+			}
+			children = append(children, buildTableRow(cells))
+		}
+
+		reqBody := map[string]interface{}{
+			"children": children,
+		}
+
+		data, err := c.Patch(fmt.Sprintf("/v1/blocks/%s/children", tableID), reqBody)
+		if err != nil {
+			return fmt.Errorf("add table rows: %w", err)
+		}
+
+		if outputFormat == "json" {
+			var result map[string]interface{}
+			if err := json.Unmarshal(data, &result); err != nil {
+				return fmt.Errorf("parse response: %w", err)
+			}
+			return render.JSON(result)
+		}
+
+		fmt.Printf("✓ %d row(s) added to table\n", len(rows))
+		return nil
+	},
+}
+
 func init() {
 	blockAppendCmd.Flags().StringP("type", "t", "paragraph", "Block type: paragraph, h1, h2, h3, todo, bullet, numbered, quote, code, callout, divider")
 	blockAppendCmd.Flags().String("lang", "plain text", "Language for code blocks (e.g. go, python, bash)")
@@ -573,6 +761,11 @@ func init() {
 	blockMoveCmd.Flags().String("before", "", "Block ID to position before")
 	blockMoveCmd.Flags().String("parent", "", "New parent block/page ID to move to")
 
+	blockTableCmd.Flags().Bool("no-header", false, "Don't treat the first row as a column header")
+	blockTableCmd.Flags().String("after", "", "Block ID to insert table after")
+	blockTableCmd.Flags().String("csv", "", "Read table data from a CSV file")
+	blockTableAddCmd.Flags().String("csv", "", "Read rows from a CSV file")
+
 	blockCmd.AddCommand(blockListCmd)
 	blockCmd.AddCommand(blockGetCmd)
 	blockCmd.AddCommand(blockAppendCmd)
@@ -580,6 +773,69 @@ func init() {
 	blockCmd.AddCommand(blockUpdateCmd)
 	blockCmd.AddCommand(blockDeleteCmd)
 	blockCmd.AddCommand(blockMoveCmd)
+	blockCmd.AddCommand(blockTableCmd)
+	blockCmd.AddCommand(blockTableAddCmd)
+}
+
+// parseCSVRow splits a comma-separated string into cells, respecting quoted fields.
+func parseCSVRow(s string) []string {
+	r := csv.NewReader(strings.NewReader(s))
+	fields, err := r.Read()
+	if err != nil {
+		// Fallback: simple split
+		return strings.Split(s, ",")
+	}
+	return fields
+}
+
+// buildTableRow builds a single Notion table_row block.
+func buildTableRow(cells []string) map[string]interface{} {
+	var apiCells []interface{}
+	for _, cell := range cells {
+		apiCells = append(apiCells, []interface{}{
+			map[string]interface{}{
+				"type": "text",
+				"text": map[string]interface{}{"content": cell},
+			},
+		})
+	}
+	return map[string]interface{}{
+		"type": "table_row",
+		"table_row": map[string]interface{}{
+			"cells": apiCells,
+		},
+	}
+}
+
+// buildTableBlock builds a complete Notion table block with rows.
+func buildTableBlock(rows [][]string, hasHeader bool) map[string]interface{} {
+	tableWidth := 0
+	for _, row := range rows {
+		if len(row) > tableWidth {
+			tableWidth = len(row)
+		}
+	}
+
+	var children []interface{}
+	for _, row := range rows {
+		// Pad rows to table width
+		cells := make([]string, tableWidth)
+		for j := 0; j < len(row); j++ {
+			cells[j] = row[j]
+		}
+		children = append(children, buildTableRow(cells))
+	}
+
+	return map[string]interface{}{
+		"object": "block",
+		"type":   "table",
+		"table": map[string]interface{}{
+			"table_width":       tableWidth,
+			"has_column_header": hasHeader,
+			"has_row_header":    false,
+			"children":          children,
+		},
+	}
 }
 
 func mapBlockType(t string) string {
@@ -606,6 +862,10 @@ func mapBlockType(t string) string {
 		return "callout"
 	case "divider":
 		return "divider"
+	case "table", "tbl":
+		return "table"
+	case "table_row", "trow":
+		return "table_row"
 	default:
 		return t
 	}
@@ -720,6 +980,30 @@ func parseMarkdownToBlocks(content string) []map[string]interface{} {
 			continue
 		}
 
+		// Markdown table (| col | col |)
+		if strings.HasPrefix(strings.TrimSpace(line), "|") && strings.HasSuffix(strings.TrimSpace(line), "|") {
+			var tableRows [][]string
+			for i < len(lines) {
+				trimmed := strings.TrimSpace(lines[i])
+				if !strings.HasPrefix(trimmed, "|") || !strings.HasSuffix(trimmed, "|") {
+					break
+				}
+				// Skip separator lines like |---|---|
+				inner := strings.Trim(trimmed, "|")
+				if isSeparatorRow(inner) {
+					i++
+					continue
+				}
+				cells := parseTableRow(trimmed)
+				tableRows = append(tableRows, cells)
+				i++
+			}
+			if len(tableRows) > 0 {
+				blocks = append(blocks, buildTableBlock(tableRows, true))
+			}
+			continue
+		}
+
 		// Headings
 		if strings.HasPrefix(line, "### ") {
 			blocks = append(blocks, makeTextBlock("heading_3", strings.TrimPrefix(line, "### ")))
@@ -804,6 +1088,35 @@ func makeTextBlock(blockType, text string) map[string]interface{} {
 			},
 		},
 	}
+}
+
+// isSeparatorRow checks if a markdown table row is a separator (e.g. "---|---").
+func isSeparatorRow(inner string) bool {
+	parts := strings.Split(inner, "|")
+	for _, p := range parts {
+		trimmed := strings.TrimSpace(p)
+		if trimmed == "" {
+			continue
+		}
+		cleaned := strings.ReplaceAll(trimmed, "-", "")
+		cleaned = strings.ReplaceAll(cleaned, ":", "")
+		if cleaned != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// parseTableRow extracts cell values from a markdown table row like "| a | b | c |".
+func parseTableRow(line string) []string {
+	line = strings.TrimSpace(line)
+	line = strings.Trim(line, "|")
+	parts := strings.Split(line, "|")
+	var cells []string
+	for _, p := range parts {
+		cells = append(cells, strings.TrimSpace(p))
+	}
+	return cells
 }
 
 // renderBlockMarkdown outputs a block as clean Markdown.
@@ -928,6 +1241,45 @@ func renderBlockMarkdown(block map[string]interface{}, indent int) {
 			expr, _ := data["expression"].(string)
 			fmt.Printf("%s$$\n%s%s\n%s$$\n\n", prefix, prefix, expr, prefix)
 		}
+	case "table":
+		// Table blocks: render children (table_row) as markdown table
+		if children, ok := block["_children"].([]interface{}); ok && len(children) > 0 {
+			for rowIdx, child := range children {
+				if row, ok := child.(map[string]interface{}); ok {
+					if rowData, ok := row["table_row"].(map[string]interface{}); ok {
+						if cells, ok := rowData["cells"].([]interface{}); ok {
+							var parts []string
+							for _, cell := range cells {
+								cellText := ""
+								if cellArr, ok := cell.([]interface{}); ok {
+									for _, rt := range cellArr {
+										if m, ok := rt.(map[string]interface{}); ok {
+											if pt, ok := m["plain_text"].(string); ok {
+												cellText += pt
+											}
+										}
+									}
+								}
+								parts = append(parts, cellText)
+							}
+							fmt.Printf("%s| %s |\n", prefix, strings.Join(parts, " | "))
+							// Separator after header row
+							if rowIdx == 0 {
+								var seps []string
+								for range parts {
+									seps = append(seps, "---")
+								}
+								fmt.Printf("%s| %s |\n", prefix, strings.Join(seps, " | "))
+							}
+						}
+					}
+				}
+			}
+			fmt.Println()
+			return // Don't recurse into children again
+		}
+	case "table_row":
+		// Handled by parent table case
 	case "column_list", "synced_block":
 		// Container blocks — just render children
 	default:

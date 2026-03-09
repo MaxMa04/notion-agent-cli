@@ -77,6 +77,24 @@ Examples:
 		// Render blocks
 		results, _ := blocks["results"].([]interface{})
 
+		// Fetch children for table blocks (they need table_row children)
+		for i, b := range results {
+			block, ok := b.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if blockType, _ := block["type"].(string); blockType == "table" {
+				if id, ok := block["id"].(string); ok {
+					if children, err := c.GetBlockChildren(id, 100, ""); err == nil {
+						if childResults, ok := children["results"].([]interface{}); ok {
+							block["_children"] = childResults
+							results[i] = block
+						}
+					}
+				}
+			}
+		}
+
 		if outputFormat == "md" || outputFormat == "markdown" {
 			// Pure markdown output
 			title := render.ExtractTitle(page)
@@ -1324,6 +1342,70 @@ func renderBlock(block map[string]interface{}, indent int) {
 		}
 	case "image":
 		fmt.Printf("%s🖼  [image]\n", prefix)
+	case "table":
+		if children, ok := block["_children"].([]interface{}); ok {
+			// Calculate column widths for nice formatting
+			var allRows [][]string
+			for _, child := range children {
+				if row, ok := child.(map[string]interface{}); ok {
+					if rowData, ok := row["table_row"].(map[string]interface{}); ok {
+						if cells, ok := rowData["cells"].([]interface{}); ok {
+							var rowCells []string
+							for _, cell := range cells {
+								cellText := ""
+								if cellArr, ok := cell.([]interface{}); ok {
+									for _, rt := range cellArr {
+										if m, ok := rt.(map[string]interface{}); ok {
+											if pt, ok := m["plain_text"].(string); ok {
+												cellText += pt
+											}
+										}
+									}
+								}
+								rowCells = append(rowCells, cellText)
+							}
+							allRows = append(allRows, rowCells)
+						}
+					}
+				}
+			}
+			if len(allRows) > 0 {
+				// Find max width per column
+				colWidths := make([]int, len(allRows[0]))
+				for _, row := range allRows {
+					for j, cell := range row {
+						if j < len(colWidths) && len(cell) > colWidths[j] {
+							colWidths[j] = len(cell)
+						}
+					}
+				}
+				// Print rows
+				for i, row := range allRows {
+					fmt.Printf("%s", prefix)
+					for j, cell := range row {
+						w := colWidths[j]
+						if w < 3 {
+							w = 3
+						}
+						fmt.Printf("│ %-*s ", w, cell)
+					}
+					fmt.Println("│")
+					// Separator after header
+					if i == 0 {
+						fmt.Printf("%s", prefix)
+						for _, w := range colWidths {
+							if w < 3 {
+								w = 3
+							}
+							fmt.Printf("├─%s─", strings.Repeat("─", w))
+						}
+						fmt.Println("┤")
+					}
+				}
+			}
+		}
+	case "table_row":
+		// Handled by parent table case
 	default:
 		text := getText(blockType)
 		if text != "" {
