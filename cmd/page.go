@@ -944,6 +944,164 @@ Examples:
 	},
 }
 
+var pageApplyTemplateCmd = &cobra.Command{
+	Use:   "apply-template <target-page-id> <template-page-id>",
+	Short: "Copy content blocks from a template page to a target page",
+	Long: `Apply a template by copying all content blocks from a template page to a target page.
+
+This fetches all blocks from the template page and appends them to the target page.
+Useful for applying standard structures (e.g., task templates) after creating a page.
+
+Examples:
+  notion-agent page apply-template <new-task-id> <template-page-id>
+  notion-agent page apply-template abc123 def456`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		token, err := getToken()
+		if err != nil {
+			return err
+		}
+
+		targetID := util.ResolveID(args[0])
+		templateID := util.ResolveID(args[1])
+
+		c := client.New(token)
+		c.SetDebug(debugMode)
+
+		// Fetch all blocks from template, preserving IDs for recursive fetch
+		var allBlocks []map[string]interface{}
+		cursor := ""
+
+		for {
+			result, err := c.GetBlockChildren(templateID, 100, cursor)
+			if err != nil {
+				return fmt.Errorf("fetch template blocks: %w", err)
+			}
+
+			results, _ := result["results"].([]interface{})
+			for _, item := range results {
+				block, ok := item.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				hasChildren, _ := block["has_children"].(bool)
+				blockType, _ := block["type"].(string)
+				blockID, _ := block["id"].(string)
+
+				// Strip server-generated fields
+				for _, key := range []string{
+					"id", "created_time", "last_edited_time", "created_by",
+					"last_edited_by", "has_children", "archived", "in_trash",
+					"parent", "request_id",
+				} {
+					delete(block, key)
+				}
+
+				// Recursively fetch and embed children
+				if hasChildren && blockType != "" && blockID != "" {
+					children, err := fetchChildBlocks(c, blockID)
+					if err != nil {
+						return fmt.Errorf("fetch children of %s: %w", blockID, err)
+					}
+					if typeData, ok := block[blockType].(map[string]interface{}); ok {
+						typeData["children"] = children
+					}
+				}
+
+				allBlocks = append(allBlocks, block)
+			}
+
+			hasMore, _ := result["has_more"].(bool)
+			if !hasMore {
+				break
+			}
+			cursor, _ = result["next_cursor"].(string)
+		}
+
+		if len(allBlocks) == 0 {
+			fmt.Println("Template page has no content blocks.")
+			return nil
+		}
+
+		// Append in batches of 100 (Notion API limit)
+		total := 0
+		for i := 0; i < len(allBlocks); i += 100 {
+			end := i + 100
+			if end > len(allBlocks) {
+				end = len(allBlocks)
+			}
+			batch := allBlocks[i:end]
+
+			reqBody := map[string]interface{}{
+				"children": batch,
+			}
+
+			_, err := c.Patch(fmt.Sprintf("/v1/blocks/%s/children", targetID), reqBody)
+			if err != nil {
+				return fmt.Errorf("append blocks (batch %d): %w", i/100+1, err)
+			}
+			total += len(batch)
+		}
+
+		fmt.Printf("✓ Applied %d blocks from template\n", total)
+		return nil
+	},
+}
+
+// fetchChildBlocks recursively fetches and cleans child blocks.
+func fetchChildBlocks(c *client.Client, parentID string) ([]map[string]interface{}, error) {
+	var children []map[string]interface{}
+	cursor := ""
+
+	for {
+		result, err := c.GetBlockChildren(parentID, 100, cursor)
+		if err != nil {
+			return nil, err
+		}
+
+		results, _ := result["results"].([]interface{})
+		for _, item := range results {
+			block, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			hasChildren, _ := block["has_children"].(bool)
+			blockType, _ := block["type"].(string)
+			blockID, _ := block["id"].(string)
+
+			for _, key := range []string{
+				"id", "created_time", "last_edited_time", "created_by",
+				"last_edited_by", "has_children", "archived", "in_trash",
+				"parent", "request_id",
+			} {
+				delete(block, key)
+			}
+
+			if hasChildren && blockType != "" && blockID != "" {
+				nested, err := fetchChildBlocks(c, blockID)
+				if err != nil {
+					return nil, err
+				}
+				if typeData, ok := block[blockType].(map[string]interface{}); ok {
+					typeData["children"] = nested
+				}
+			}
+
+			children = append(children, block)
+		}
+
+		hasMore, _ := result["has_more"].(bool)
+		if !hasMore {
+			break
+		}
+		cursor, _ = result["next_cursor"].(string)
+	}
+
+	return children, nil
+}
+
 func init() {
 	pageListCmd.Flags().IntP("limit", "l", 10, "Maximum results")
 	pageListCmd.Flags().String("cursor", "", "Pagination cursor")
@@ -970,6 +1128,7 @@ func init() {
 	pageCmd.AddCommand(pageLinkCmd)
 	pageCmd.AddCommand(pageUnlinkCmd)
 	pageCmd.AddCommand(pageEditCmd)
+	pageCmd.AddCommand(pageApplyTemplateCmd)
 }
 
 // openBrowser opens a URL in the default browser.
