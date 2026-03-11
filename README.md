@@ -23,25 +23,9 @@ A full-featured command-line interface for [Notion](https://notion.so). Manage p
 
 ## Install
 
-### Homebrew (macOS / Linux)
-```sh
-brew install MaxMa04/tap/notion-agent-cli
-```
-
 ### npm (cross-platform)
 ```sh
 npm install -g @vibelabsio/notion-agent-cli
-```
-
-### Shell Script (Linux / macOS)
-```sh
-curl -fsSL https://raw.githubusercontent.com/MaxMa04/notion-agent-cli/main/install.sh | sh
-```
-
-### Scoop (Windows)
-```sh
-scoop bucket add maxma04 https://github.com/MaxMa04/scoop-bucket
-scoop install notion-agent-cli
 ```
 
 ### Go
@@ -49,9 +33,9 @@ scoop install notion-agent-cli
 go install github.com/MaxMa04/notion-agent-cli@latest
 ```
 
-### Docker
+### Shell Script (Linux / macOS)
 ```sh
-docker run --rm ghcr.io/maxma04/notion-agent-cli:latest search "query"
+curl -fsSL https://raw.githubusercontent.com/MaxMa04/notion-agent-cli/main/install.sh | sh
 ```
 
 ### Binary
