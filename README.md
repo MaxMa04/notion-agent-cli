@@ -25,7 +25,7 @@ A full-featured command-line interface for [Notion](https://notion.so). Manage p
 
 ### npm (cross-platform)
 ```sh
-npm install -g @vibelabsio/notion-agent-cli
+npm install -g notion-agent-cli
 ```
 
 ### Go

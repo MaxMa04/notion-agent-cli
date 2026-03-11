@@ -1,4 +1,4 @@
-# @vibelabsio/notion-agent-cli
+# notion-agent-cli
 
 Like `gh` for GitHub, but for Notion. 47 commands. One binary.
 
@@ -7,7 +7,7 @@ This is an npm wrapper that downloads the platform-specific binary from [GitHub 
 ## Install
 
 ```sh
-npm install -g @vibelabsio/notion-agent-cli
+npm install -g notion-agent-cli
 ```
 
 ## Usage

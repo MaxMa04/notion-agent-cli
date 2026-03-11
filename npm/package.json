@@ -1,5 +1,5 @@
 {
-  "name": "@vibelabsio/notion-agent-cli",
+  "name": "notion-agent-cli",
   "version": "0.6.0",
   "description": "Notion Agent CLI — full-featured CLI for Notion, built for developers and AI agents",
   "bin": {

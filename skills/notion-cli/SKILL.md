@@ -18,7 +18,7 @@ brew install MaxMa04/tap/notion-agent-cli
 go install github.com/MaxMa04/notion-agent-cli@latest
 
 # npm
-npm install -g @vibelabsio/notion-agent-cli
+npm install -g notion-agent-cli
 
 # Or download binary from GitHub Releases
 # https://github.com/MaxMa04/notion-agent-cli/releases
