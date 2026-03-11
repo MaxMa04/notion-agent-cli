@@ -820,9 +820,7 @@ func buildTableBlock(rows [][]string, hasHeader bool) map[string]interface{} {
 	for _, row := range rows {
 		// Pad rows to table width
 		cells := make([]string, tableWidth)
-		for j := 0; j < len(row); j++ {
-			cells[j] = row[j]
-		}
+		copy(cells, row)
 		children = append(children, buildTableRow(cells))
 	}
 

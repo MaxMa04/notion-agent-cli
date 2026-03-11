@@ -164,9 +164,13 @@ func TestGetToken_LegacyConfigPath(t *testing.T) {
 
 	// Write config to legacy notion-cli path
 	legacyDir := filepath.Join(tmpDir, ".config", "notion-cli")
-	os.MkdirAll(legacyDir, 0700)
+	if err := os.MkdirAll(legacyDir, 0700); err != nil {
+		t.Fatalf("failed to create directory: %v", err)
+	}
 	cfg := `{"current_profile":"default","profiles":{"default":{"token":"legacy-works"}}}`
-	os.WriteFile(filepath.Join(legacyDir, "config.json"), []byte(cfg), 0600)
+	if err := os.WriteFile(filepath.Join(legacyDir, "config.json"), []byte(cfg), 0600); err != nil {
+		t.Fatalf("failed to write config file: %v", err)
+	}
 
 	token, err := getToken()
 	if err != nil {
