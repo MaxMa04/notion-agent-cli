@@ -271,17 +271,23 @@ func (c *Client) ListComments(blockID string, pageSize int, startCursor string) 
 	return result, nil
 }
 
-// AddComment adds a comment to a page.
-func (c *Client) AddComment(pageID, text string) ([]byte, error) {
+// AddCommentRichText adds a comment with a rich_text array (supports mentions).
+func (c *Client) AddCommentRichText(pageID string, richText []interface{}) ([]byte, error) {
 	body := map[string]interface{}{
 		"parent": map[string]interface{}{
 			"page_id": pageID,
 		},
-		"rich_text": []map[string]interface{}{
-			{"text": map[string]interface{}{"content": text}},
-		},
+		"rich_text": richText,
 	}
 	return c.Post("/v1/comments", body)
+}
+
+// AddComment adds a plain text comment to a page (no mentions).
+func (c *Client) AddComment(pageID, text string) ([]byte, error) {
+	richText := []interface{}{
+		map[string]interface{}{"text": map[string]interface{}{"content": text}},
+	}
+	return c.AddCommentRichText(pageID, richText)
 }
 
 // UploadFileContent sends file content to an existing file upload via multipart form.

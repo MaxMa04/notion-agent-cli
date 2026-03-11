@@ -3,12 +3,53 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	"github.com/MaxMa04/notion-agent-cli/internal/client"
 	"github.com/MaxMa04/notion-agent-cli/internal/render"
 	"github.com/MaxMa04/notion-agent-cli/internal/util"
 	"github.com/spf13/cobra"
 )
+
+var mentionRegex = regexp.MustCompile(`@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})`)
+
+// parseRichText converts text with @UUID mentions into a Notion rich_text array.
+// Plain @UUID patterns become real user mentions that trigger notifications.
+func parseRichText(text string) []interface{} {
+	matches := mentionRegex.FindAllStringIndex(text, -1)
+	if len(matches) == 0 {
+		return []interface{}{
+			map[string]interface{}{"type": "text", "text": map[string]interface{}{"content": text}},
+		}
+	}
+
+	var parts []interface{}
+	lastEnd := 0
+	for _, match := range matches {
+		if match[0] > lastEnd {
+			parts = append(parts, map[string]interface{}{
+				"type": "text",
+				"text": map[string]interface{}{"content": text[lastEnd:match[0]]},
+			})
+		}
+		userID := text[match[0]+1 : match[1]]
+		parts = append(parts, map[string]interface{}{
+			"type": "mention",
+			"mention": map[string]interface{}{
+				"type": "user",
+				"user": map[string]interface{}{"id": userID},
+			},
+		})
+		lastEnd = match[1]
+	}
+	if lastEnd < len(text) {
+		parts = append(parts, map[string]interface{}{
+			"type": "text",
+			"text": map[string]interface{}{"content": text[lastEnd:]},
+		})
+	}
+	return parts
+}
 
 var commentCmd = &cobra.Command{
 	Use:   "comment",
@@ -120,7 +161,8 @@ Examples:
 		c := client.New(token)
 		c.SetDebug(debugMode)
 
-		data, err := c.AddComment(pageID, text)
+		richText := parseRichText(text)
+		data, err := c.AddCommentRichText(pageID, richText)
 		if err != nil {
 			return fmt.Errorf("add comment: %w", err)
 		}
@@ -241,9 +283,7 @@ Examples:
 		// Post reply to the same discussion thread
 		reqBody := map[string]interface{}{
 			"discussion_id": discussionID,
-			"rich_text": []map[string]interface{}{
-				{"text": map[string]interface{}{"content": text}},
-			},
+			"rich_text":     parseRichText(text),
 		}
 
 		respData, err := c.Post("/v1/comments", reqBody)
