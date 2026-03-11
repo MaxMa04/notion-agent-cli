@@ -17,7 +17,7 @@ if (!fs.existsSync(binaryPath)) {
   require("./install");
   if (!fs.existsSync(binaryPath)) {
     console.error(
-      "Installation failed. Please run: npm install -g notion-agent-cli"
+      "Installation failed. Please run: npm install -g @vibelabsio/notion-agent-cli"
     );
     process.exit(1);
   }

@@ -14,7 +14,7 @@
 
 | 渠道 | 目标用户 | 实现方式 | 工作量 |
 |------|---------|---------|--------|
-| **npm wrapper** | Node.js/agent 生态 | 轻量 npm 包 `notion-agent-cli`，postinstall 拉二进制 | 2h |
+| **npm wrapper** | Node.js/agent 生态 | 轻量 npm 包 `@vibelabsio/notion-agent-cli`，postinstall 拉二进制 | 2h |
 | **Docker** | CI/CD/自动化 | `ghcr.io/MaxMa04/notion-agent-cli` | 30min |
 | **Scoop** | Windows | goreleaser 内置 scoop manifest | 15min |
 
@@ -59,13 +59,13 @@
 
 ```
 notion-agent-cli-npm/
-├── package.json     # name: notion-agent-cli
+├── package.json     # name: @vibelabsio/notion-agent-cli
 ├── install.js       # postinstall: 检测平台 → 下载对应 GitHub Release 二进制
 ├── bin/notion       # shell wrapper → 执行下载的二进制
 └── README.md
 ```
 
-用户体验: `npx notion-agent-cli search "meeting notes"`
+用户体验: `npx @vibelabsio/notion-agent-cli search "meeting notes"`
 
 ### Phase 3: Docker（本周）
 

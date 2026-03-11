@@ -1,13 +1,13 @@
-# notion-agent-cli
+# @vibelabsio/notion-agent-cli
 
 Like `gh` for GitHub, but for Notion. 47 commands. One binary.
 
-This is an npm wrapper that downloads the platform-specific binary from [GitHub Releases](https://github.com/MaxMa04/notion-agent-cli/releases).
+This is an npm wrapper that downloads the platform-specific binary from [GitHub Releases](https://github.com/MaxMa04/@vibelabsio/notion-agent-cli/releases).
 
 ## Install
 
 ```sh
-npm install -g notion-agent-cli
+npm install -g @vibelabsio/notion-agent-cli
 ```
 
 ## Usage
@@ -20,4 +20,4 @@ notion-agent db query <db-id> --filter 'Status=Done'
 
 ## Documentation
 
-Full documentation: [github.com/MaxMa04/notion-agent-cli](https://github.com/MaxMa04/notion-agent-cli)
+Full documentation: [github.com/MaxMa04/@vibelabsio/notion-agent-cli](https://github.com/MaxMa04/@vibelabsio/notion-agent-cli)
