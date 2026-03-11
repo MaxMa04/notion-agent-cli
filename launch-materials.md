@@ -22,10 +22,10 @@ Hey r/Notion! I built **notion-cli** — a command-line tool that gives you comp
 
 **Install:**
 ```
-brew install 4ier/tap/notion-cli    # macOS/Linux
-scoop bucket add 4ier https://github.com/4ier/scoop-bucket && scoop install notion-cli  # Windows
-npm install -g @4ier/notion-cli     # npm
-go install github.com/4ier/notion-cli@latest  # Go
+brew install MaxMa04/tap/notion-agent-cli    # macOS/Linux
+scoop bucket add MaxMa04 https://github.com/MaxMa04/scoop-bucket && scoop install notion-agent-cli  # Windows
+npm install -g @vibelabsio/notion-agent-cli     # npm
+go install github.com/MaxMa04/notion-agent-cli@latest  # Go
 ```
 
 **Quick example:**
@@ -35,7 +35,7 @@ notion page create <db-id> --db "Name=Weekly Review" "Status=Todo"
 notion block list <page-id> --md --depth 3
 ```
 
-GitHub: https://github.com/4ier/notion-cli
+GitHub: https://github.com/MaxMa04/notion-agent-cli
 
 Feedback welcome — what commands would you use most?
 
@@ -58,9 +58,9 @@ Highlights for the CLI crowd:
 
 Particularly useful for scripting and AI agents that need to interact with Notion workspaces.
 
-`brew install 4ier/tap/notion-cli`
+`brew install MaxMa04/tap/notion-agent-cli`
 
-GitHub: https://github.com/4ier/notion-cli
+GitHub: https://github.com/MaxMa04/notion-agent-cli
 
 ---
 
@@ -68,7 +68,7 @@ GitHub: https://github.com/4ier/notion-cli
 
 **Title:** Show HN: Notion-CLI – Full Notion API from the terminal, 39 commands, one binary
 
-**URL:** https://github.com/4ier/notion-cli
+**URL:** https://github.com/MaxMa04/notion-agent-cli
 
 ---
 
@@ -83,7 +83,7 @@ Human-friendly filters, Markdown I/O, schema-aware page creation, pipe-friendly 
 
 Built for developers and AI agents.
 
-github.com/4ier/notion-cli
+github.com/MaxMa04/notion-agent-cli
 
 ---
 

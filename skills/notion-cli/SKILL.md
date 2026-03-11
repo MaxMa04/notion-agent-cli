@@ -1,85 +1,85 @@
 ---
 name: notion-cli
 description: |
-  Work with Notion from the terminal using the `notion` CLI. Use when the user needs to read, create, update, query, or manage Notion pages, databases, blocks, comments, users, or files programmatically. Covers the entire Notion API with 44 commands. Triggers: Notion workspace automation, database queries, page creation, block manipulation, comment threads, file uploads, relation management, database export, multi-workspace management, or any Notion API interaction from the command line.
+  Work with Notion from the terminal using the `notion-agent` CLI. Use when the user needs to read, create, update, query, or manage Notion pages, databases, blocks, comments, users, or files programmatically. Covers the entire Notion API with 47 commands. Triggers: Notion workspace automation, database queries, page creation, block manipulation, comment threads, file uploads, relation management, database export, multi-workspace management, or any Notion API interaction from the command line.
 ---
 
-# Notion CLI
+# Notion Agent CLI
 
-`notion` is a CLI for the Notion API. Single Go binary, full API coverage, dual output (pretty tables for humans, JSON for agents).
+`notion-agent` is a CLI for the Notion API. Single Go binary, full API coverage, dual output (pretty tables for humans, JSON for agents).
 
 ## Install
 
 ```bash
 # Homebrew
-brew install 4ier/tap/notion-cli
+brew install MaxMa04/tap/notion-agent-cli
 
 # Go
-go install github.com/4ier/notion-cli@latest
+go install github.com/MaxMa04/notion-agent-cli@latest
 
 # npm
-npm install -g notion-cli-go
+npm install -g @vibelabsio/notion-agent-cli
 
 # Or download binary from GitHub Releases
-# https://github.com/4ier/notion-cli/releases
+# https://github.com/MaxMa04/notion-agent-cli/releases
 ```
 
 ## Auth
 
 ```bash
-notion auth login --with-token <<< "ntn_xxxxxxxxxxxxx"   # or interactive
-notion auth login --with-token --profile work <<< "ntn_xxx"  # save as named profile
+notion-agent auth login --with-token <<< "ntn_xxxxxxxxxxxxx"   # or interactive
+notion-agent auth login --with-token --profile work <<< "ntn_xxx"  # save as named profile
 export NOTION_TOKEN=ntn_xxxxxxxxxxxxx                     # env var alternative
-notion auth status                                        # show current profile
-notion auth switch                                        # interactive profile picker
-notion auth switch work                                   # switch to named profile
-notion auth doctor                                        # health check
+notion-agent auth status                                        # show current profile
+notion-agent auth switch                                        # interactive profile picker
+notion-agent auth switch work                                   # switch to named profile
+notion-agent auth doctor                                        # health check
 ```
 
 ## Command Reference
 
 ### Search
 ```bash
-notion search "query"                    # search everything
-notion search "query" --type page        # pages only
-notion search "query" --type database    # databases only
+notion-agent search "query"                    # search everything
+notion-agent search "query" --type page        # pages only
+notion-agent search "query" --type database    # databases only
 ```
 
 ### Pages
 ```bash
-notion page view <id|url>                # render page content
-notion page list                         # list workspace pages
-notion page create <parent> --title "X" --body "content"
-notion page create <db-id> --db "Name=Review" "Status=Todo"  # database row
-notion page delete <id>                  # archive page
-notion page restore <id>                 # unarchive page
-notion page move <id> --to <parent>
-notion page open <id>                    # open in browser
-notion page edit <id|url>                # edit in $EDITOR (Markdown round-trip)
-notion page edit <id> --editor nano      # specify editor
-notion page set <id> Key=Value ...       # set properties (type-aware)
-notion page props <id>                   # show all properties
-notion page props <id> <prop-id>         # get specific property
-notion page link <id> --prop "Rel" --to <target-id>    # add relation
-notion page unlink <id> --prop "Rel" --from <target-id> # remove relation
+notion-agent page view <id|url>                # render page content
+notion-agent page list                         # list workspace pages
+notion-agent page create <parent> --title "X" --body "content"
+notion-agent page create <db-id> --db "Name=Review" "Status=Todo"  # database row
+notion-agent page delete <id>                  # archive page
+notion-agent page restore <id>                 # unarchive page
+notion-agent page move <id> --to <parent>
+notion-agent page open <id>                    # open in browser
+notion-agent page edit <id|url>                # edit in $EDITOR (Markdown round-trip)
+notion-agent page edit <id> --editor nano      # specify editor
+notion-agent page set <id> Key=Value ...       # set properties (type-aware)
+notion-agent page props <id>                   # show all properties
+notion-agent page props <id> <prop-id>         # get specific property
+notion-agent page link <id> --prop "Rel" --to <target-id>    # add relation
+notion-agent page unlink <id> --prop "Rel" --from <target-id> # remove relation
 ```
 
 ### Databases
 ```bash
-notion db list                           # list databases
-notion db view <id>                      # show schema
-notion db query <id>                     # query all rows
-notion db query <id> -F 'Status=Done' -s 'Date:desc'  # filter + sort
-notion db query <id> --filter-json '{"or":[...]}'     # complex JSON filter
-notion db query <id> --all               # fetch all pages
-notion db create <parent> --title "X" --props "Status:select,Date:date"
-notion db update <id> --title "New Name" --add-prop "Priority:select"
-notion db add <id> "Name=Task" "Status=Todo" "Priority=High"
-notion db add-bulk <id> --file items.json              # bulk create from JSON
-notion db export <id>                    # export all rows as CSV (default)
-notion db export <id> --format json      # export as JSON
-notion db export <id> --format md -o report.md  # export as Markdown table to file
-notion db open <id>                      # open in browser
+notion-agent db list                           # list databases
+notion-agent db view <id>                      # show schema
+notion-agent db query <id>                     # query all rows
+notion-agent db query <id> -F 'Status=Done' -s 'Date:desc'  # filter + sort
+notion-agent db query <id> --filter-json '{"or":[...]}'     # complex JSON filter
+notion-agent db query <id> --all               # fetch all pages
+notion-agent db create <parent> --title "X" --props "Status:select,Date:date"
+notion-agent db update <id> --title "New Name" --add-prop "Priority:select"
+notion-agent db add <id> "Name=Task" "Status=Todo" "Priority=High"
+notion-agent db add-bulk <id> --file items.json              # bulk create from JSON
+notion-agent db export <id>                    # export all rows as CSV (default)
+notion-agent db export <id> --format json      # export as JSON
+notion-agent db export <id> --format md -o report.md  # export as Markdown table to file
+notion-agent db open <id>                      # open in browser
 ```
 
 #### Filter operators
@@ -102,51 +102,51 @@ Multiple `-F` flags combine with AND. Property types are auto-detected from sche
 
 ### Blocks
 ```bash
-notion block list <parent-id>            # list child blocks
-notion block list <parent-id> --all      # paginate through all
-notion block list <parent-id> --depth 3  # recursive nested blocks
-notion block list <parent-id> --md       # output as Markdown
-notion block get <id>                    # get single block
-notion block append <parent> "text"      # append paragraph
-notion block append <parent> "text" -t bullet          # bullet point
-notion block append <parent> "text" -t code --lang go  # code block
-notion block append <parent> --file notes.md           # from file
-notion block insert <parent> "text" --after <block-id> # positional insert
-notion block update <id> --text "new"    # update content
-notion block delete <id1> [id2] [id3]    # delete one or more
-notion block move <id> --after <target>  # reposition after target block
-notion block move <id> --before <target> # reposition before target block
-notion block move <id> --parent <new-parent>  # move to different parent
+notion-agent block list <parent-id>            # list child blocks
+notion-agent block list <parent-id> --all      # paginate through all
+notion-agent block list <parent-id> --depth 3  # recursive nested blocks
+notion-agent block list <parent-id> --md       # output as Markdown
+notion-agent block get <id>                    # get single block
+notion-agent block append <parent> "text"      # append paragraph
+notion-agent block append <parent> "text" -t bullet          # bullet point
+notion-agent block append <parent> "text" -t code --lang go  # code block
+notion-agent block append <parent> --file notes.md           # from file
+notion-agent block insert <parent> "text" --after <block-id> # positional insert
+notion-agent block update <id> --text "new"    # update content
+notion-agent block delete <id1> [id2] [id3]    # delete one or more
+notion-agent block move <id> --after <target>  # reposition after target block
+notion-agent block move <id> --before <target> # reposition before target block
+notion-agent block move <id> --parent <new-parent>  # move to different parent
 ```
 
 Block types: `paragraph`/`p`, `h1`, `h2`, `h3`, `bullet`, `numbered`, `todo`, `quote`, `code`, `callout`, `divider`
 
 ### Comments
 ```bash
-notion comment list <page-id>
-notion comment add <page-id> "comment text"
-notion comment get <comment-id>
-notion comment reply <comment-id> "reply text"  # reply in same thread
+notion-agent comment list <page-id>
+notion-agent comment add <page-id> "comment text"
+notion-agent comment get <comment-id>
+notion-agent comment reply <comment-id> "reply text"  # reply in same thread
 ```
 
 ### Users
 ```bash
-notion user me                           # current bot info
-notion user list                         # all workspace users
-notion user get <user-id>
+notion-agent user me                           # current bot info
+notion-agent user list                         # all workspace users
+notion-agent user get <user-id>
 ```
 
 ### Files
 ```bash
-notion file list                         # list uploads
-notion file upload ./path/to/file        # upload (auto MIME detection)
+notion-agent file list                         # list uploads
+notion-agent file upload ./path/to/file        # upload (auto MIME detection)
 ```
 
 ### Raw API (escape hatch)
 ```bash
-notion api GET /v1/users/me
-notion api POST /v1/search '{"query":"test"}'
-notion api PATCH /v1/pages/<id> '{"archived":true}'
+notion-agent api GET /v1/users/me
+notion-agent api POST /v1/search '{"query":"test"}'
+notion-agent api PATCH /v1/pages/<id> '{"archived":true}'
 ```
 
 ## Output Modes
@@ -160,7 +160,7 @@ All output includes full Notion UUIDs. All commands accept Notion URLs or IDs.
 
 ## Tips
 
-- `notion db add` and `notion page set` auto-detect property types from schema
+- `notion-agent db add` and `notion-agent page set` auto-detect property types from schema
 - Multi-select: `Tags=tag1,tag2,tag3`
 - Checkbox: `Done=true`
-- Pipe to jq: `notion db query <id> -F 'Status=Done' --format json | jq '.results[].id'`
+- Pipe to jq: `notion-agent db query <id> -F 'Status=Done' --format json | jq '.results[].id'`

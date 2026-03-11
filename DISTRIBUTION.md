@@ -7,15 +7,15 @@
 | 渠道 | 目标用户 | 实现方式 | 工作量 |
 |------|---------|---------|--------|
 | **GitHub Releases** | 所有平台 | goreleaser + GitHub Actions | 1h |
-| **go install** | Go 开发者 | 已就绪（`go install github.com/4ier/notion-cli@latest`） | 0 |
-| **Homebrew Tap** | macOS/Linux 开发者 | goreleaser 自动生成 formula → `4ier/homebrew-tap` | 30min |
+| **go install** | Go 开发者 | 已就绪（`go install github.com/MaxMa04/notion-agent-cli@latest`） | 0 |
+| **Homebrew Tap** | macOS/Linux 开发者 | goreleaser 自动生成 formula → `MaxMa04/homebrew-tap` | 30min |
 
 ### Tier 2 — 应该做（扩大覆盖）
 
 | 渠道 | 目标用户 | 实现方式 | 工作量 |
 |------|---------|---------|--------|
-| **npm wrapper** | Node.js/agent 生态 | 轻量 npm 包 `@4ier/notion-cli`，postinstall 拉二进制 | 2h |
-| **Docker** | CI/CD/自动化 | `ghcr.io/4ier/notion-cli` | 30min |
+| **npm wrapper** | Node.js/agent 生态 | 轻量 npm 包 `@vibelabsio/notion-agent-cli`，postinstall 拉二进制 | 2h |
+| **Docker** | CI/CD/自动化 | `ghcr.io/MaxMa04/notion-agent-cli` | 30min |
 | **Scoop** | Windows | goreleaser 内置 scoop manifest | 15min |
 
 ### Tier 3 — 锦上添花（长尾）
@@ -37,8 +37,8 @@
 ├── builds: linux/darwin/windows × amd64/arm64
 ├── archives: tar.gz (unix) / zip (windows)
 ├── checksum: SHA256
-├── homebrew_formulas: 4ier/homebrew-tap
-├── scoop: 4ier/scoop-bucket
+├── homebrew_formulas: MaxMa04/homebrew-tap
+├── scoop: MaxMa04/scoop-bucket
 └── changelog: auto from git
 
 .github/workflows/release.yml
@@ -51,21 +51,21 @@
 **执行步骤：**
 1. 创建 `.goreleaser.yaml`
 2. 创建 `.github/workflows/release.yml` + `.github/workflows/test.yml`
-3. 创建 `4ier/homebrew-tap` 和 `4ier/scoop-bucket` 仓库
+3. 创建 `MaxMa04/homebrew-tap` 和 `MaxMa04/scoop-bucket` 仓库
 4. 打 tag `v0.2.0`，推送触发自动发布
-5. 验证: `brew install 4ier/tap/notion-cli`
+5. 验证: `brew install MaxMa04/tap/notion-agent-cli`
 
 ### Phase 2: npm wrapper（本周）
 
 ```
-notion-cli-npm/
-├── package.json     # name: @4ier/notion-cli
+notion-agent-cli-npm/
+├── package.json     # name: @vibelabsio/notion-agent-cli
 ├── install.js       # postinstall: 检测平台 → 下载对应 GitHub Release 二进制
 ├── bin/notion       # shell wrapper → 执行下载的二进制
 └── README.md
 ```
 
-用户体验: `npx @4ier/notion-cli search "meeting notes"`
+用户体验: `npx @vibelabsio/notion-agent-cli search "meeting notes"`
 
 ### Phase 3: Docker（本周）
 

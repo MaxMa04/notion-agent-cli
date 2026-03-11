@@ -7,14 +7,14 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/4ier/notion-cli/releases/download/v0.2.0/demo.gif" alt="demo" width="640">
+  <img src="https://raw.githubusercontent.com/MaxMa04/notion-agent-cli/main/demo.gif" alt="demo" width="640">
 </p>
 
 <p align="center">
-  <a href="https://github.com/4ier/notion-cli/releases"><img src="https://img.shields.io/github/v/release/4ier/notion-cli?style=flat-square" alt="Release"></a>
-  <a href="https://github.com/4ier/notion-cli/actions"><img src="https://img.shields.io/github/actions/workflow/status/4ier/notion-cli/test.yml?style=flat-square&label=tests" alt="Tests"></a>
-  <a href="https://github.com/4ier/notion-cli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/4ier/notion-cli?style=flat-square" alt="License"></a>
-  <a href="https://goreportcard.com/report/github.com/4ier/notion-cli"><img src="https://goreportcard.com/badge/github.com/4ier/notion-cli?style=flat-square" alt="Go Report Card"></a>
+  <a href="https://github.com/MaxMa04/notion-agent-cli/releases"><img src="https://img.shields.io/github/v/release/MaxMa04/notion-agent-cli?style=flat-square" alt="Release"></a>
+  <a href="https://github.com/MaxMa04/notion-agent-cli/actions"><img src="https://img.shields.io/github/actions/workflow/status/MaxMa04/notion-agent-cli/test.yml?style=flat-square&label=tests" alt="Tests"></a>
+  <a href="https://github.com/MaxMa04/notion-agent-cli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/MaxMa04/notion-agent-cli?style=flat-square" alt="License"></a>
+  <a href="https://goreportcard.com/report/github.com/MaxMa04/notion-agent-cli"><img src="https://goreportcard.com/badge/github.com/MaxMa04/notion-agent-cli?style=flat-square" alt="Go Report Card"></a>
 </p>
 
 ---
@@ -23,9 +23,35 @@ A full-featured command-line interface for [Notion](https://notion.so). Manage p
 
 ## Install
 
+### Homebrew (macOS / Linux)
+```sh
+brew install MaxMa04/tap/notion-agent-cli
+```
+
+### npm (cross-platform)
+```sh
+npm install -g @vibelabsio/notion-agent-cli
+```
+
+### Shell Script (Linux / macOS)
+```sh
+curl -fsSL https://raw.githubusercontent.com/MaxMa04/notion-agent-cli/main/install.sh | sh
+```
+
+### Scoop (Windows)
+```sh
+scoop bucket add maxma04 https://github.com/MaxMa04/scoop-bucket
+scoop install notion-agent-cli
+```
+
 ### Go
 ```sh
 go install github.com/MaxMa04/notion-agent-cli@latest
+```
+
+### Docker
+```sh
+docker run --rm ghcr.io/maxma04/notion-agent-cli:latest search "query"
 ```
 
 ### Binary
@@ -234,6 +260,10 @@ notion-agent auth login --profile work
 notion-agent auth switch work
 notion-agent auth logout work
 ```
+
+## Acknowledgements
+
+This project is based on [notion-cli](https://github.com/4ier/notion-cli) by [4ier](https://github.com/4ier).
 
 ## Contributing
 

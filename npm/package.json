@@ -1,0 +1,35 @@
+{
+  "name": "@vibelabsio/notion-agent-cli",
+  "version": "0.0.0",
+  "description": "Notion Agent CLI — full-featured CLI for Notion, built for developers and AI agents",
+  "bin": {
+    "notion-agent": "./bin/notion-agent"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin/",
+    "install.js",
+    "run.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MaxMa04/notion-agent-cli"
+  },
+  "homepage": "https://github.com/MaxMa04/notion-agent-cli",
+  "keywords": [
+    "notion",
+    "cli",
+    "api",
+    "agent",
+    "notion-api",
+    "productivity"
+  ],
+  "author": "Max Mannstein",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14"
+  }
+}

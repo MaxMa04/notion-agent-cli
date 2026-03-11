@@ -1,6 +1,8 @@
-# Notion CLI — Design Document
+# Notion Agent CLI — Design Document
 
 > Build something worthy of standing next to `gh`.
+
+> **Note:** The binary was renamed from `notion` to `notion-agent` in v0.3. Command examples below may still reference the old name.
 
 ## Philosophy
 
