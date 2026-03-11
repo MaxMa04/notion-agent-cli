@@ -3,7 +3,7 @@
   "version": "0.6.0",
   "description": "Notion Agent CLI — full-featured CLI for Notion, built for developers and AI agents",
   "bin": {
-    "notion-agent": "bin/notion-agent"
+    "notion-agent": "run.js"
   },
   "scripts": {
     "postinstall": "node install.js"

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-const { execFileSync } = require("child_process");
+const { execFileSync, execSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -11,10 +11,12 @@ const binaryName =
 const binaryPath = path.join(__dirname, "bin", binaryName);
 
 if (!fs.existsSync(binaryPath)) {
-  console.error(
-    "notion-agent binary not found. Running install..."
-  );
-  require("./install");
+  console.error("notion-agent binary not found. Running install...");
+  try {
+    execSync("node install.js", { cwd: __dirname, stdio: "inherit" });
+  } catch {
+    // install.js already prints error messages
+  }
   if (!fs.existsSync(binaryPath)) {
     console.error(
       "Installation failed. Please run: npm install -g @vibelabsio/notion-agent-cli"
